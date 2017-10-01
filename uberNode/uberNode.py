@@ -42,7 +42,7 @@ if __name__ == '__main__':
             self.outputs['value'] = 5
 
 
-     class Constant( UberNode ):
+    class Constant( UberNode ):
         
         def __init__( self, *args, **kwargs ):
             UberNode.__init__( self, *args, **kwargs )

@@ -1,3 +1,10 @@
+import os
+import sys
+
+thisDirPath = os.path.dirname( os.path.abspath( __file__ ) )
+uberPath = os.path.join( thisDirPath, '..' )
+if uberPath not in sys.path:
+	sys.path.append( uberPath )
 import unittest
 
 from uberNode import UberNode as Node
