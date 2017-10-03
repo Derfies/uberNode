@@ -25,6 +25,23 @@ class UberNode( object ):
     def getInputValue( self, name ):
         return self.inputs[name].value
 
+    def setInputValue( self, name, value ):
+
+        # TO DO - Type checking?
+        self.inputs[name].value = value
+
+    def addOutput( self, name, value=None ):
+        self.outputs[name] = ValueWrapper( value )
+
+    def getOutputValue( self, name ):
+        return self.outputs[name].value
+
+    def setOutputValue( self, name, value ):
+        self.outputs[name].value = value
+
+    #def connect( self, inputName, outputName ):
+    #    self.inputs[inputName] = input1.outputs['value']
+
     def evaluate( self ):
         """Take inputs, run code, produce outputs."""
         pass
