@@ -18,17 +18,31 @@ class Variable( UberNode ):
         self.addOutput( 'value', value )
 
 
+class Link( UberNode ):
+
+    def __init__( self, **kwargs ):
+        UberNode.__init__( self, **kwargs )
+
+        self.addInput( 'in' )
+        self.addOutput( 'out' )
+
+    def evaluate( self, **inputs ):
+        return {'out': inputs['in']}
+
+
 class Add( UberNode ):
 
     def __init__( self, **kwargs ):
         UberNode.__init__( self, **kwargs )
 
+        self.addInput( 'a' )
+        self.addInput( 'b' )
         self.addOutput( 'result' )
     
-    def evaluate( self ):
-        a = self.getInputValue( 'a' )
-        b = self.getInputValue( 'b' )
-        self.setOutputValue( 'result', a + b )
+    def evaluate( self, **inputs ):
+        return {
+            'result': inputs['a'] + inputs['b']
+        }
 
 
 class TestStringMethods( unittest.TestCase ):
@@ -47,47 +61,66 @@ class TestStringMethods( unittest.TestCase ):
         child.setParent( parent2 )
         self.assertTrue( child.parent == parent2 and child in parent2.children and child.parent != parent1 and child not in parent1.children )
 
-    def test_connect( self ):
-        input1 = Variable( 1 )
-        input2 = Variable( 2 )
+    def test_outputValue( self ):
+        self.assertTrue( Variable( 1 ).getOutputValue() == 1 )
+
+    def test_basicConnection( self ):
+        var = Variable( 1 )
+        lnk = Link()
+        var.connect( 'value', lnk, 'in' )
+        self.assertTrue( lnk.getOutputValue() == 1 )
+
+    def test_basicGraph( self ):
+        var1 = Variable( 1 )
+        var2 = Variable( 2 )
         add = Add()
-        add.inputs['a'] = input1.outputs['value']
-        add.inputs['b'] = input2.outputs['value']
-        add.evaluate()
-        self.assertTrue( add.getOutputValue( 'result' ) == 3 )
+        var1.connect( 'value', add, 'a' )
+        var2.connect( 'value', add, 'b' )
+        self.assertTrue( add.getOutputValue() == 3 )
 
-    def test_reconnect( self ):
-        input1 = Variable( 1 )
-        input2 = Variable( 2 )
-        input3 = Variable( 3 )
-        add = Add()
-        add.inputs['a'] = input1.outputs['value']
-        add.inputs['b'] = input2.outputs['value']
-        add.evaluate()
-        oldValue = add.getOutputValue( 'result' )
-        add.inputs['b'] = input3.outputs['value']
-        add.evaluate()
-        newValue = add.getOutputValue( 'result' )
-        self.assertTrue( oldValue == 3 and newValue == 4 )
+    # def test_reconnect( self ):
+    #     var1 = Variable( 1 )
+    #     var2 = Variable( 2 )
+    #     var3 = Variable( 3 )
+    #     add = Add()
+    #     add.inputs['a'] = var1.outputs['value']
+    #     add.inputs['b'] = var2.outputs['value']
+    #     add.evaluate()
+    #     oldValue = add.getOutputValue()
+    #     add.inputs['b'] = var3.outputs['value']
+    #     add.evaluate()
+    #     newValue = add.getOutputValue()
+    #     self.assertTrue( oldValue == 3 and newValue == 4 )
 
-    def test_chain( self ):
+    # def test_basicGraph( self ):
 
-        # Add 2 and 1.
-        input1 = Variable( 1 )
-        input2 = Variable( 2 )
-        add1 = Add()
-        add1.inputs['a'] = input1.outputs['value']
-        add1.inputs['b'] = input2.outputs['value']
-        add1.evaluate()
+    #     # Add 2 and 1.
+    #     var1 = Variable( 1 )
+    #     var2 = Variable( 2 )
+    #     add1 = Add()
+    #     add1.inputs['a'] = var1.outputs['value']
+    #     add1.inputs['b'] = var2.outputs['value']
+    #     add1.evaluate()
 
-        # Add the result to 3.
-        input3 = Variable( 3 )
-        add2 = Add()
-        add2.inputs['a'] = add1.outputs['result']
-        add2.inputs['b'] = input3.outputs['value']
-        add2.evaluate()
+    #     # Add the result to 3.
+    #     var3 = Variable( 3 )
+    #     add2 = Add()
+    #     add2.inputs['a'] = add1.outputs['result']
+    #     add2.inputs['b'] = var3.outputs['value']
+    #     add2.evaluate()
 
-        self.assertTrue( add1.getOutputValue( 'result' ) == 3 and add2.getOutputValue( 'result' ) == 6 )
+    #     self.assertTrue( add1.getOutputValue() == 3 and add2.getOutputValue() == 6 )
+
+    # def test_chain( self ):
+    #     var1 = Variable( 1 )
+    #     pt = Link()
+    #     pt.inputs['in'] = var1.outputs['value']
+    #     pt.evaluate()
+    #     print pt.getOutputValue()
+    #     var1.setOutputValue( 'value', 2 )
+    #     pt.evaluate()   # TO DO: remove having to call this.
+    #     print pt.getOutputValue()
+        
 
 
 if __name__ == '__main__':
