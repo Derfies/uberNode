@@ -64,11 +64,35 @@ class TestStringMethods( unittest.TestCase ):
     def test_outputValue( self ):
         self.assertTrue( Variable( 1 ).getOutputValue() == 1 )
 
-    def test_basicConnection( self ):
+    def test_oneConnection( self ):
         var = Variable( 1 )
         lnk = Link()
         var.connect( 'value', lnk, 'in' )
         self.assertTrue( lnk.getOutputValue() == 1 )
+
+    def test_oneConnectionChangeValue( self ):
+        var = Variable( 1 )
+        lnk = Link()
+        var.connect( 'value', lnk, 'in' )
+        var.setOutputValue( 'value', 2 )
+        self.assertTrue( lnk.getOutputValue() == 2 )
+
+    def test_twoConnections( self ):
+        var = Variable( 1 )
+        lnk1 = Link()
+        lnk2 = Link()
+        var.connect( 'value', lnk1, 'in' )
+        lnk1.connect( 'out', lnk2, 'in' )
+        self.assertTrue( lnk2.getOutputValue() == 1 )
+
+    def test_twoConnectionsChangeValue( self ):
+        var = Variable( 1 )
+        lnk1 = Link()
+        lnk2 = Link()
+        var.connect( 'value', lnk1, 'in' )
+        lnk1.connect( 'out', lnk2, 'in' )
+        var.setOutputValue( 'value', 2 )
+        self.assertTrue( lnk2.getOutputValue() == 2 )
 
     def test_basicGraph( self ):
         var1 = Variable( 1 )
@@ -110,17 +134,6 @@ class TestStringMethods( unittest.TestCase ):
     #     add2.evaluate()
 
     #     self.assertTrue( add1.getOutputValue() == 3 and add2.getOutputValue() == 6 )
-
-    # def test_chain( self ):
-    #     var1 = Variable( 1 )
-    #     pt = Link()
-    #     pt.inputs['in'] = var1.outputs['value']
-    #     pt.evaluate()
-    #     print pt.getOutputValue()
-    #     var1.setOutputValue( 'value', 2 )
-    #     pt.evaluate()   # TO DO: remove having to call this.
-    #     print pt.getOutputValue()
-        
 
 
 if __name__ == '__main__':

@@ -1,20 +1,11 @@
-# class ValueWrapper( object ):
-
-#     def __init__( self, node, value=None, type_=None ):
-#         self.node = node
-#         self.value = value
-#         self.type = type_   # For type checking, which we may want to do.
-
-
 class UberNode( object ):
 
     def __init__( self, **kwargs ):
         self.parent = kwargs.get( 'parent' )
         self.children = kwargs.get( 'children', [] )
-        self.inputs = {}
-        self.outputs = {}
 
-        # HAXXOR
+        self.inputs = []
+        self.outputs = {}
         self.inputConnections = {}
         self.outputConnections = {}
 
@@ -24,31 +15,25 @@ class UberNode( object ):
         self.parent = parent
         self.parent.children.append( self )
 
-    # def append( self, node ):
-    #     pass
-
-    # def getInputValue( self, name ):
-    #     return self.inputs[name].value
-
-    # def setInputValue( self, name, value ):
-
-    #     # TO DO - Type checking?
-    #     self.inputs[name].value = value
+    def append( self, node ):
+        node.setParent( self )
 
     def addInput( self, name ):
-        self.inputs[name] = None
+        assert name not in self.inputs, 'Input "{}" already exists'.format( name )
+        self.inputs.append( name )
 
     def addOutput( self, name, value=None ):
-        self.outputs[name] = value#ValueWrapper( self, value )
+        self.outputs[name] = value
 
     def getOutputValue( self, name=None ):
         if name is None:
             assert len( self.outputs ) == 1, 'Must specify an output name'
             name = self.outputs.keys()[0]
-        return self.outputs[name]#.value
+        return self.outputs[name]
 
     def setOutputValue( self, name, value ):
         self.outputs[name] = value
+        self.evaluateDirtyNodes()
 
     def connect( self, outputName, inputNode, inputName ):
 
@@ -57,6 +42,9 @@ class UberNode( object ):
         outputConnections = self.outputConnections.setdefault( outputName, [] )
         outputConnections.append( (inputNode, inputName) )
         inputNode.inputConnections[inputName] = (self, outputName)
+        self.evaluateDirtyNodes()
+
+    def evaluateDirtyNodes( self ):
 
         # Evaluate all nodes. TO DO - Make this recursive. Also needs more smarts
         # for complex graphs, I imagine. 
@@ -68,10 +56,6 @@ class UberNode( object ):
         for node in list( set( dirtyNodes ) ):
             node.doEvaluation()
 
-    def evaluate( self, **inputs ):
-        """Take inputs, run code, produce outputs."""
-        return {}
-
     def doEvaluation( self ):
 
         inputs = {
@@ -80,11 +64,15 @@ class UberNode( object ):
         }
 
         # Only calculate if the required inputs matches the input connections.
-        if set( inputs.keys() ) == set( self.inputs.keys() ):
+        if set( inputs.keys() ) == set( self.inputs ):
             results = self.evaluate( **inputs )
             for k, v in results.items():
                 assert k in self.outputs, 'Calculated value "' + k + '" which is not an output'
                 self.setOutputValue( k, v )
+
+    def evaluate( self, **inputs ):
+        """Take inputs, run code, produce outputs."""
+        return {}
  
 
 if __name__ == '__main__':
