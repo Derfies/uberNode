@@ -1,6 +1,7 @@
 class UberNode( object ):
 
     def __init__( self, **kwargs ):
+        self.name = kwargs.get( 'name' )
         self.parent = kwargs.get( 'parent' )
         self.children = kwargs.get( 'children', [] )
 
@@ -23,19 +24,36 @@ class UberNode( object ):
         self.inputs.append( name )
 
     def addOutput( self, name, value=None ):
+        assert name not in self.outputs, 'Output "{}" already exists'.format( name )
         self.outputs[name] = value
 
+    def getInputValue( self, name=None ):
+
+        # For convenience. If there is only one input then the name kwarg isn't
+        # necessary.
+        if name is None:
+            assert len( self.inputs ) == 1, 'Must specify an input name'
+            name = self.inputs[0]
+        return self.getInputs()[name]
+
     def getOutputValue( self, name=None ):
+
+        # For convenience. If there is only one output then the name kwarg isn't
+        # necessary.
         if name is None:
             assert len( self.outputs ) == 1, 'Must specify an output name'
             name = self.outputs.keys()[0]
+        assert name in self.outputs, 'Output "{}" does not exist'.format( name )
         return self.outputs[name]
 
     def setOutputValue( self, name, value ):
+        assert name in self.outputs, 'Output "{}" does not exist'.format( name )
         self.outputs[name] = value
         self.evaluateDirtyNodes()
 
     def connect( self, outputName, inputNode, inputName ):
+        assert inputName in inputNode.inputs, 'Input "{}" does not exist'.format( inputName )
+        assert outputName in self.outputs, 'Output "{}" does not exist'.format( outputName )
 
         # Add input / output connections. Inputs can only have one connection
         # whereas outputs can have many.
@@ -43,6 +61,9 @@ class UberNode( object ):
         outputConnections.append( (inputNode, inputName) )
         inputNode.inputConnections[inputName] = (self, outputName)
         self.evaluateDirtyNodes()
+
+    def disconnect( self, outputName ):
+        print self.outputConnections.setdefault[outputName]
 
     def evaluateDirtyNodes( self ):
 
@@ -56,18 +77,20 @@ class UberNode( object ):
         for node in list( set( dirtyNodes ) ):
             node.doEvaluation()
 
-    def doEvaluation( self ):
-
-        inputs = {
+    def getInputs( self ):
+        return {
             inputName: connection[0].getOutputValue( connection[1] )
             for inputName, connection in self.inputConnections.items()
         }
+
+    def doEvaluation( self ):
+        inputs = self.getInputs()
 
         # Only calculate if the required inputs matches the input connections.
         if set( inputs.keys() ) == set( self.inputs ):
             results = self.evaluate( **inputs )
             for k, v in results.items():
-                assert k in self.outputs, 'Calculated value "' + k + '" which is not an output'
+                assert k in self.outputs, 'Calculated value "{}" which is not an output'.format( k )
                 self.setOutputValue( k, v )
 
     def evaluate( self, **inputs ):
