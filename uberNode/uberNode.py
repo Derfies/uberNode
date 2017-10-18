@@ -27,6 +27,21 @@ class UberNode( object ):
         assert name not in self.outputs, 'Output "{}" already exists'.format( name )
         self.outputs[name] = value
 
+    def addStaticOutput( self, name, value=None ):
+
+        cls = type( self )
+
+        def fget( self ):
+            return getattr( self, '_' + name )
+
+        def fset( self, value ):
+            setattr( self, '_' + name, value )
+            self.doEvaluation() 
+        
+        self.addOutput( name, value )
+        setattr( cls, '_' + name, value )
+        setattr( cls, name, property( fget, fset ) )
+
     def getInputValue( self, name=None ):
 
         # For convenience. If there is only one input then the name kwarg isn't
@@ -45,11 +60,6 @@ class UberNode( object ):
             name = self.outputs.keys()[0]
         assert name in self.outputs, 'Output "{}" does not exist'.format( name )
         return self.outputs[name]
-
-    def setOutputValue( self, name, value ):
-        assert name in self.outputs, 'Output "{}" does not exist'.format( name )
-        self.outputs[name] = value
-        self.evaluateDirtyNodes()
 
     def connect( self, outputName, inputNode, inputName ):
         assert inputName in inputNode.inputs, 'Input "{}" does not exist'.format( inputName )
@@ -89,9 +99,10 @@ class UberNode( object ):
         # Only calculate if the required inputs matches the input connections.
         if set( inputs.keys() ) == set( self.inputs ):
             results = self.evaluate( **inputs )
+            assert hasattr( results, 'keys' ) and set( results.keys() ) == set( self.outputs.keys() ), 'Evaluate did not return expected values'
             for k, v in results.items():
-                assert k in self.outputs, 'Calculated value "{}" which is not an output'.format( k )
-                self.setOutputValue( k, v )
+                self.outputs[k] = v
+                self.evaluateDirtyNodes()
 
     def evaluate( self, **inputs ):
         """Take inputs, run code, produce outputs."""

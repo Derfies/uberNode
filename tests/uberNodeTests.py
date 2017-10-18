@@ -1,12 +1,11 @@
 import os
 import sys
+import unittest
 
 thisDirPath = os.path.dirname( os.path.abspath( __file__ ) )
 uberPath = os.path.join( thisDirPath, '..' )
 if uberPath not in sys.path:
     sys.path.append( uberPath )
-import unittest
-
 from uberNode import UberNode
 
 
@@ -15,7 +14,10 @@ class Input( UberNode ):
     def __init__( self, value, **kwargs ):
         UberNode.__init__( self, **kwargs )
 
-        self.addOutput( 'value', value )
+        self.addStaticOutput( 'value', value )
+
+    def evaluate( self, **inputs ):
+        return {'value': self.value}
 
 
 class Output( UberNode ):
@@ -94,7 +96,7 @@ class TestStringMethods( unittest.TestCase ):
         in_ = Input( 1 )
         in_.connect( 'value', out, 'value' )
         oldVal = out.getInputValue()
-        in_.setOutputValue( 'value', 2 )
+        in_.value = 2
         newVal = out.getInputValue()
         self.assertTrue( oldVal == 1 and newVal == 2 )
 
@@ -105,7 +107,7 @@ class TestStringMethods( unittest.TestCase ):
     def test_outputValueChanged( self ):
         in_ = Input( 1 )
         oldVal = in_.getOutputValue()
-        in_.setOutputValue( 'value', 2 )
+        in_.value = 2
         newVal = in_.getOutputValue()
         self.assertTrue( oldVal == 1 and newVal == 2 )
 
@@ -116,15 +118,6 @@ class TestStringMethods( unittest.TestCase ):
         in_.connect( 'value', lnk, 'in' )
         lnk.connect( 'out', out, 'value' )
         self.assertTrue( out.getInputValue() == 1 )
-
-    # def test_twoConnectionsChangeValue( self ):
-    #     var = Input( 1 )
-    #     lnk1 = Link()
-    #     lnk2 = Link()
-    #     var.connect( 'value', lnk1, 'in' )
-    #     lnk1.connect( 'out', lnk2, 'in' )
-    #     var.setOutputValue( 'value', 2 )
-    #     self.assertTrue( lnk2.getOutputValue() == 2 )
 
     def test_add( self ):
         var1 = Input( 1 )
