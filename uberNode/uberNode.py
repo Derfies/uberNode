@@ -1,20 +1,42 @@
-class Inputs( object ):
+import collections
 
-    def __init__( self, node, inputs ):
+
+class BasePuts( collections.MutableMapping ):
+
+    def __init__( self, node, keys ):
         self._node = node
-        self._inputs = inputs
+        self._keys = keys
+        self._data = {}
         self._connections = {}
 
-    def __getitem__( self, *args ):
-        key = args[0]
+    def __len__( self ):
+        return len( self._data )
+
+    def __iter__( self ):
+        return iter( self._data )
+
+    def __getitem__( self, key ):
+        raise NotImplementedError
+
+    def __setitem__( self, key, value ):
+        self._data[key] = value
+
+    def __delitem__( self, key ):
+        del self._data[key]
+
+
+class Inputs( BasePuts ):
+
+    def __getitem__( self, key ):
         if key in self._connections:
             output, outputName = self._connections[key]
             return output[outputName]
         else:
-            return self._inputs[key]
+            return self._data[key]
 
-    def __setitem__( self, *args ):
-        self._inputs.update( {args[0]: args[1]} )
+    def __setitem__( self, key, value ):
+        super( Inputs, self ).__setitem__( key, value )
+
         self._node.onEvaluate()
 
     def connect( self, inputName, output, outputName, connectInverse=True ):
@@ -26,19 +48,23 @@ class Inputs( object ):
             output.connect( outputName, self, inputName, connectInverse=False )
         self._node.onEvaluate()
 
+    def allConnected( self ):
+        return set( self._keys ) & set( self._data.keys() ) == set( self._keys )
 
-class Outputs( object ):
 
-    def __init__( self, node, outputs ):
-        self._node = node
-        self._outputs = outputs
-        self._connections = {}
+class Outputs( BasePuts ):
 
-    def __getitem__( self, *args ):
-        return self._outputs[args[0]]
+    def __getitem__( self, key ):
+        if key not in self._keys:
+            raise KeyError( 'output \'' + key + '\' does not exist' )
+        elif key in self._keys and key not in self._data:
+            raise KeyError( 'node has not been evaluated' )
+        return self._data[key]
 
-    def __setitem__( self, *args ):
-        self._outputs.update( {args[0]: args[1]} )
+    def __setitem__( self, key, value ):
+        if key not in self._keys:
+            raise KeyError( 'output \'' + key + '\' does not exist' )
+        super( Outputs, self ).__setitem__( key, value )
 
     def connect( self, outputName, input_, inputName, connectInverse=True ):
 
@@ -57,11 +83,8 @@ class UberNode( object ):
         self.parent = kwargs.get( 'parent' )
         self.children = kwargs.get( 'children', [] )
 
-        self.inputs = Inputs( self, kwargs.get( 'inputs', {} ) )
-        self.outputs = Outputs( self, kwargs.get( 'outputs', {} ) )
-
-        # Big question about design here. How do we handle if evaluate is all
-        self.onEvaluate()
+        self.inputs = Inputs( self, kwargs.get( 'inputs', [] ) )
+        self.outputs = Outputs( self, kwargs.get( 'outputs', [] ) )
 
     def setParent( self, parent ):
         if self.parent is not None:
@@ -85,12 +108,13 @@ class UberNode( object ):
             node.onEvaluate()
 
     def onEvaluate( self ):
-        self.evaluate()
-        self.evaluateDownstreamNodes()
+        if self.inputs.allConnected():
+            self.evaluate()
+            self.evaluateDownstreamNodes()
 
     def evaluate( self, **inputs ):
         """Take inputs, run code, produce outputs."""
-        return {}
+        pass
  
 
 if __name__ == '__main__':

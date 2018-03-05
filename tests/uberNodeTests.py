@@ -9,19 +9,32 @@ if uberPath not in sys.path:
 from uberNode import UberNode
 
 
-class Add( UberNode ):
+class BaseAdd( UberNode ):
 
     def __init__( self ):
-        UberNode.__init__( self, inputs={'a': 0, 'b': 0} )
+        super( BaseAdd, self ).__init__( inputs=['a', 'b'], outputs=['result'] )
 
     def evaluate( self ):
         self.outputs['result'] = self.inputs['a'] + self.inputs['b']
 
 
+class Add( BaseAdd ):
+
+    def __init__( self ):
+        super( Add, self ).__init__()
+
+        # Set some defaults.
+        self.inputs['a'] = 0
+        self.inputs['b'] = 0
+
+
 class Variable( UberNode ):
 
     def __init__( self ):
-        UberNode.__init__( self, inputs={'value': None}, outputs={'result': None} )
+        UberNode.__init__( self, inputs=['value'], outputs=['result'] )
+
+        # Set some defaults.
+        self.inputs['value'] = 0
 
     def evaluate( self ):
         self.outputs['result'] = self.inputs['value']
@@ -42,6 +55,18 @@ class UberNodeTests( unittest.TestCase ):
         child.setParent( parent1 )
         child.setParent( parent2 )
         self.assertTrue( child.parent == parent2 and child in parent2.children and child.parent != parent1 and child not in parent1.children )
+
+    def test_outputDoesNotExist( self ):
+        with self.assertRaises( KeyError ) as context:
+            node = UberNode()
+            node.outputs['foo']
+        self.assertTrue( 'output \'foo\' does not exist' in context.exception )
+
+    def test_notEvaluated( self ):
+        with self.assertRaises( KeyError ) as context:
+            node = BaseAdd()
+            node.outputs['result']
+        self.assertTrue( 'node has not been evaluated' in context.exception )
 
     def test_simple( self ):
         add = Add()
