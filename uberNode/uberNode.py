@@ -19,6 +19,8 @@ class BasePuts( collections.MutableMapping ):
         raise NotImplementedError
 
     def __setitem__( self, key, value ):
+        if key not in self._keys:
+            raise KeyError( key )
         self._data[key] = value
 
     def __delitem__( self, key ):
